@@ -11,6 +11,7 @@ const attendanceRoutes = require("./routes/attendanceRoutes");
 const certificateRoutes = require("./routes/certificateRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const announcementRoutes = require("./routes/announcementRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 
@@ -35,6 +36,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/certificates", certificateRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/announcements", announcementRoutes);
+app.use("/api/auth", authRoutes);
 
 // MongoDB connection
 mongoose

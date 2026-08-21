@@ -1,26 +1,19 @@
 const Registration = require("../models/Registration");
-const User = require("../models/User");
 const Event = require("../models/Event");
 
 
-// Register a user for an event
+
+// ==========================================
+// Register logged-in user for an event
+// ==========================================
 const createRegistration = async (req, res) => {
   try {
-    const {
-      user,
-      event
-    } = req.body;
+    const { event } = req.body;
 
-    // 1. Check if user exists
-    const existingUser = await User.findById(user);
+    // Get logged-in user from JWT token
+    const user = req.user._id;
 
-    if (!existingUser) {
-      return res.status(404).json({
-        message: "User not found"
-      });
-    }
-
-    // 2. Check if event exists
+    // 1. Check if event exists
     const existingEvent = await Event.findById(event);
 
     if (!existingEvent) {
@@ -29,14 +22,14 @@ const createRegistration = async (req, res) => {
       });
     }
 
-    // 3. Check whether registration is required
+    // 2. Check whether registration is required
     if (!existingEvent.registrationRequired) {
       return res.status(400).json({
         message: "Registration is not required for this event"
       });
     }
 
-    // 4. Check registration dates
+    // 3. Check registration dates
     const currentDate = new Date();
 
     if (
@@ -57,14 +50,14 @@ const createRegistration = async (req, res) => {
       });
     }
 
-    // 5. Check whether the event is cancelled
+    // 4. Check whether event is cancelled
     if (existingEvent.status === "CANCELLED") {
       return res.status(400).json({
         message: "Cannot register for a cancelled event"
       });
     }
 
-    // 6. Check if user is already registered
+    // 5. Check if user is already registered
     const alreadyRegistered = await Registration.findOne({
       user,
       event,
@@ -79,7 +72,7 @@ const createRegistration = async (req, res) => {
       });
     }
 
-    // 7. Check event capacity
+    // 6. Check event capacity
     if (existingEvent.maxParticipants) {
       const registeredCount = await Registration.countDocuments({
         event,
@@ -93,13 +86,13 @@ const createRegistration = async (req, res) => {
       }
     }
 
-    // 8. Create registration
+    // 7. Create registration
     const registration = await Registration.create({
       user,
       event
     });
 
-    // 9. Return registration with useful information
+    // 8. Populate registration details
     const populatedRegistration = await Registration.findById(
       registration._id
     )
@@ -123,7 +116,10 @@ const createRegistration = async (req, res) => {
 };
 
 
+// ==========================================
 // Get all registrations
+// ADMIN only - protected in routes
+// ==========================================
 const getRegistrations = async (req, res) => {
   try {
     const registrations = await Registration.find()
@@ -147,7 +143,9 @@ const getRegistrations = async (req, res) => {
 };
 
 
+// ==========================================
 // Get registration by ID
+// ==========================================
 const getRegistrationById = async (req, res) => {
   try {
     const registration = await Registration.findById(
@@ -178,25 +176,40 @@ const getRegistrationById = async (req, res) => {
 };
 
 
+// ==========================================
 // Cancel registration
+// ==========================================
 const cancelRegistration = async (req, res) => {
   try {
     const registration = await Registration.findById(
       req.params.id
     );
 
+    // Check if registration exists
     if (!registration) {
       return res.status(404).json({
         message: "Registration not found"
       });
     }
 
+    // Student can cancel only their own registration
+    if (
+      req.user.role !== "ADMIN" &&
+      registration.user.toString() !== req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message: "Access denied. You can only cancel your own registration"
+      });
+    }
+
+    // Check if already cancelled
     if (registration.status === "CANCELLED") {
       return res.status(400).json({
         message: "Registration is already cancelled"
       });
     }
 
+    // Cancel registration
     registration.status = "CANCELLED";
     registration.cancelledAt = new Date();
 
@@ -214,11 +227,40 @@ const cancelRegistration = async (req, res) => {
     });
   }
 };
+// Get registrations of the logged-in user
+const getMyRegistrations = async (req, res) => {
+  try {
+    const registrations = await Registration.find({
+      user: req.user._id
+    })
+      .populate(
+        "event",
+        "title description category venue startDate endDate image"
+      )
+      .sort({
+        createdAt: -1
+      });
 
+    res.status(200).json({
+      count: registrations.length,
+      registrations
+    });
 
+  } catch (error) {
+    res.status(500).json({
+      message: "Error fetching your registrations",
+      error: error.message
+    });
+  }
+};
+
+// ==========================================
+// Export all controller functions
+// ==========================================
 module.exports = {
   createRegistration,
   getRegistrations,
   getRegistrationById,
-  cancelRegistration
+  cancelRegistration,
+  getMyRegistrations
 };

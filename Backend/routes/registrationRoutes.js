@@ -4,26 +4,58 @@ const {
   createRegistration,
   getRegistrations,
   getRegistrationById,
-  cancelRegistration
+  cancelRegistration,
+  getMyRegistrations
 } = require("../controllers/registrationController");
+
+const protect = require("../middleware/authMiddleware");
+const authorize = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
 
 // Register for an event
-router.post("/", createRegistration);
+router.post(
+  "/",
+  protect,
+  authorize("STUDENT", "ADMIN"),
+  createRegistration
+);
 
 
-// Get all registrations
-router.get("/", getRegistrations);
+// Get logged-in user's registrations
+// IMPORTANT: This must come before "/:id"
+router.get(
+  "/my",
+  protect,
+  getMyRegistrations
+);
 
 
-// Get registration by ID
-router.get("/:id", getRegistrationById);
+// Get all registrations - Admin only
+router.get(
+  "/",
+  protect,
+  authorize("ADMIN"),
+  getRegistrations
+);
 
 
-// Cancel registration
-router.put("/:id/cancel", cancelRegistration);
+// Get registration by ID - Admin only
+router.get(
+  "/:id",
+  protect,
+  authorize("ADMIN"),
+  getRegistrationById
+);
+
+
+router.put(
+  "/:id/cancel",
+  protect,
+  authorize("STUDENT", "ADMIN"),
+  cancelRegistration
+);
 
 
 module.exports = router;
