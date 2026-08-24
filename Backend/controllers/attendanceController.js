@@ -4,18 +4,26 @@ const User = require("../models/User");
 const Event = require("../models/Event");
 
 
+// ==========================================
 // Mark attendance
+// ==========================================
 const markAttendance = async (req, res) => {
   try {
     const {
       user,
       event,
       status,
-      markedBy,
-      remarks
+      method
     } = req.body;
 
-    // 1. Check user
+    // Validate required fields
+    if (!user || !event) {
+      return res.status(400).json({
+        message: "User and event are required"
+      });
+    }
+
+    // Check user
     const existingUser = await User.findById(user);
 
     if (!existingUser) {
@@ -24,7 +32,7 @@ const markAttendance = async (req, res) => {
       });
     }
 
-    // 2. Check event
+    // Check event
     const existingEvent = await Event.findById(event);
 
     if (!existingEvent) {
@@ -33,7 +41,7 @@ const markAttendance = async (req, res) => {
       });
     }
 
-    // 3. Check whether user is registered
+    // Check registration
     const registration = await Registration.findOne({
       user,
       event,
@@ -46,7 +54,7 @@ const markAttendance = async (req, res) => {
       });
     }
 
-    // 4. Check duplicate attendance
+    // Check duplicate attendance
     const existingAttendance = await Attendance.findOne({
       user,
       event
@@ -58,21 +66,23 @@ const markAttendance = async (req, res) => {
       });
     }
 
-    // 5. Create attendance
+    // Create attendance
     const attendance = await Attendance.create({
       user,
       event,
-      status,
-      markedBy,
-      remarks
+      registration: registration._id,
+      status: status || "PRESENT",
+      markedBy: req.user._id,
+      method: method || "MANUAL"
     });
 
-    // 6. Populate useful information
+    // Populate useful information
     const populatedAttendance = await Attendance.findById(
       attendance._id
     )
       .populate("user", "name email role")
       .populate("event", "title category startDate endDate")
+      .populate("registration")
       .populate("markedBy", "name email role");
 
     res.status(201).json({
@@ -89,12 +99,15 @@ const markAttendance = async (req, res) => {
 };
 
 
+// ==========================================
 // Get all attendance records
+// ==========================================
 const getAttendance = async (req, res) => {
   try {
     const attendance = await Attendance.find()
       .populate("user", "name email role")
       .populate("event", "title category startDate endDate")
+      .populate("registration")
       .populate("markedBy", "name email role");
 
     res.status(200).json({
@@ -111,12 +124,15 @@ const getAttendance = async (req, res) => {
 };
 
 
+// ==========================================
 // Get attendance by ID
+// ==========================================
 const getAttendanceById = async (req, res) => {
   try {
     const attendance = await Attendance.findById(req.params.id)
       .populate("user", "name email role")
       .populate("event", "title category startDate endDate")
+      .populate("registration")
       .populate("markedBy", "name email role");
 
     if (!attendance) {
@@ -138,19 +154,23 @@ const getAttendanceById = async (req, res) => {
 };
 
 
+// ==========================================
 // Update attendance
+// ==========================================
 const updateAttendance = async (req, res) => {
   try {
-    const {
-      status,
-      remarks
-    } = req.body;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({
+        message: "Status is required"
+      });
+    }
 
     const attendance = await Attendance.findByIdAndUpdate(
       req.params.id,
       {
-        status,
-        remarks
+        status
       },
       {
         new: true,
@@ -159,6 +179,7 @@ const updateAttendance = async (req, res) => {
     )
       .populate("user", "name email role")
       .populate("event", "title category startDate endDate")
+      .populate("registration")
       .populate("markedBy", "name email role");
 
     if (!attendance) {
