@@ -1,5 +1,5 @@
-const Registration = require("../models/Registration");
-const Event = require("../models/Event");
+const Registration = require("../database/Registration");
+const Event = require("../database/Event");
 
 
 

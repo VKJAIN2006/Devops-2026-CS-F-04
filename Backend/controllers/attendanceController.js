@@ -1,7 +1,7 @@
-const Attendance = require("../models/Attendance");
-const Registration = require("../models/Registration");
-const User = require("../models/User");
-const Event = require("../models/Event");
+const Attendance = require("../database/Attendance");
+const Registration = require("../database/Registration");
+const User = require("../database/User");
+const Event = require("../database/Event");
 
 
 // Mark attendance

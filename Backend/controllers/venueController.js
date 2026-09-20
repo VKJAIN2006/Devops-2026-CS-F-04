@@ -1,4 +1,4 @@
-const Venue = require("../models/Venue");
+const Venue = require("../database/Venue");
 
 
 // Create a new venue

@@ -1,7 +1,7 @@
-const Certificate = require("../models/Certificate");
-const User = require("../models/User");
-const Event = require("../models/Event");
-const Attendance = require("../models/Attendance");
+const Certificate = require("../database/Certificate");
+const User = require("../database/User");
+const Event = require("../database/Event");
+const Attendance = require("../database/Attendance");
 
 
 // Generate certificate

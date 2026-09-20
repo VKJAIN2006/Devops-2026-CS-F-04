@@ -18,15 +18,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-require("./models/User");
-require("./models/Department");
-require("./models/Venue");
-require("./models/Event");
-require("./models/Registration");
-require("./models/Attendance");
-require("./models/Certificate");
-require("./models/Feedback");
-require("./models/Announcement");
+require("./database/User");
+require("./database/Department");
+require("./database/Venue");
+require("./database/Event");
+require("./database/Registration");
+require("./database/Attendance");
+require("./database/Certificate");
+require("./database/Feedback");
+require("./database/Announcement");
 
 app.use("/api/departments", departmentRoutes);
 app.use("/api/venues", venueRoutes);
@@ -55,9 +55,4 @@ app.get("/", (req, res) => {
   });
 });
 
-// Server
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+module.exports = app;
