@@ -1,7 +1,15 @@
+<<<<<<< HEAD
 const Certificate = require("../database/Certificate");
 const User = require("../database/User");
 const Event = require("../database/Event");
 const Attendance = require("../database/Attendance");
+=======
+const Certificate = require("../models/Certificate");
+const User = require("../models/User");
+const Event = require("../models/Event");
+const Attendance = require("../models/Attendance");
+const Registration = require("../models/Registration");
+>>>>>>> 46853fb4d5936ef6d9d67035208586adfc0afe7f
 
 
 // Generate certificate
@@ -31,6 +39,18 @@ const createCertificate = async (req, res) => {
         message: "Event not found"
       });
     }
+
+const registration = await Registration.findOne({
+  user,
+  event,
+  status: "REGISTERED"
+});
+
+if (!registration) {
+  return res.status(400).json({
+    message: "User is not registered for this event"
+  });
+}
 
     // Check attendance
     const attendance = await Attendance.findOne({
@@ -66,12 +86,13 @@ const createCertificate = async (req, res) => {
 
     // Create certificate
     const certificate = await Certificate.create({
-      user,
-      event,
-      certificateNumber,
-      certificateType,
-      certificateUrl
-    });
+  user,
+  event,
+  registration: registration._id,
+  certificateNumber,
+  type: certificateType || "PARTICIPATION",
+  certificateUrl
+});
 
     // Populate response
     const populatedCertificate = await Certificate.findById(

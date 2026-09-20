@@ -7,23 +7,50 @@ const {
   updateAttendance
 } = require("../controllers/attendanceController");
 
+const protect = require("../middleware/authMiddleware");
+const authorize = require("../middleware/roleMiddleware");
+
 const router = express.Router();
 
 
 // Mark attendance
-router.post("/", markAttendance);
+// Organizer/Admin only
+router.post(
+  "/",
+  protect,
+  authorize("ORGANIZER", "ADMIN"),
+  markAttendance
+);
 
 
 // Get all attendance
-router.get("/", getAttendance);
+// Organizer/Admin only
+router.get(
+  "/",
+  protect,
+  authorize("ORGANIZER", "ADMIN"),
+  getAttendance
+);
 
 
 // Get attendance by ID
-router.get("/:id", getAttendanceById);
+// Organizer/Admin only
+router.get(
+  "/:id",
+  protect,
+  authorize("ORGANIZER", "ADMIN"),
+  getAttendanceById
+);
 
 
 // Update attendance
-router.put("/:id", updateAttendance);
+// Organizer/Admin only
+router.put(
+  "/:id",
+  protect,
+  authorize("ORGANIZER", "ADMIN"),
+  updateAttendance
+);
 
 
 module.exports = router;
