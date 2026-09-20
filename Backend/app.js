@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 
+const dashboardRoutes = require("./routes/dashboardRoutes");
 const departmentRoutes = require("./routes/departmentRoutes");
 const venueRoutes = require("./routes/venueRoutes");
 const eventRoutes = require("./routes/eventRoutes");
@@ -28,6 +29,7 @@ require("./models/Certificate");
 require("./models/Feedback");
 require("./models/Announcement");
 
+app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/venues", venueRoutes);
 app.use("/api/events", eventRoutes);

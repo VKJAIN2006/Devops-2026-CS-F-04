@@ -5,7 +5,8 @@ const {
   getEvents,
   getEventById,
   updateEvent,
-  deleteEvent
+  deleteEvent,
+  getEventStatistics
 } = require("../controllers/eventController");
 
 const protect = require("../middleware/authMiddleware");
@@ -20,6 +21,14 @@ const router = express.Router();
 
 // Get all events
 router.get("/", getEvents);
+
+// Get event statistics
+router.get(
+  "/:id/statistics",
+  protect,
+  authorize("ADMIN", "ORGANIZER", "FACULTY"),
+  getEventStatistics
+);
 
 // Get single event
 router.get("/:id", getEventById);
