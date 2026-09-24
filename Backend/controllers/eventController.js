@@ -36,10 +36,19 @@ const EDITABLE_FIELDS = [
   "maxParticipants",
   "registrationRequired",
   "eligibility",
+  "allowedRoles",
   "image"
 ];
 
 const PROTECTED_FIELDS = ["organizer", "status", "approval"];
+
+
+const VALID_EVENT_ROLES = ["STUDENT", "FACULTY", "ORGANIZER", "ADMIN"];
+
+const isValidAllowedRoles = (roles) =>
+  Array.isArray(roles) &&
+  roles.length > 0 &&
+  roles.every((role) => VALID_EVENT_ROLES.includes(role));
 
 
 // ==========================================
@@ -85,6 +94,7 @@ const createEvent = async (req, res) => {
       maxParticipants,
       registrationRequired,
       eligibility,
+      allowedRoles,
       image
     } = req.body;
 
@@ -208,6 +218,15 @@ const createEvent = async (req, res) => {
       });
     }
 
+    // ========== Allowed roles validation ==========
+    if (allowedRoles !== undefined && allowedRoles !== null) {
+      if (!isValidAllowedRoles(allowedRoles)) {
+        return res.status(400).json({
+          message: "allowedRoles must be a non-empty array of roles from: STUDENT, FACULTY, ORGANIZER, ADMIN"
+        });
+      }
+    }
+
     // ========== Create (always starts as DRAFT) ==========
     const event = await Event.create({
       title: title.trim(),
@@ -224,6 +243,7 @@ const createEvent = async (req, res) => {
       registrationRequired:
         registrationRequired === undefined ? true : registrationRequired === true,
       eligibility,
+      allowedRoles,
       image
     });
 
@@ -483,6 +503,14 @@ const updateEvent = async (req, res) => {
       event.registrationRequired = updates.registrationRequired === true;
     }
     if (updates.eligibility !== undefined) event.eligibility = updates.eligibility;
+    if (updates.allowedRoles !== undefined) {
+      if (!isValidAllowedRoles(updates.allowedRoles)) {
+        return res.status(400).json({
+          message: "allowedRoles must be a non-empty array of roles from: STUDENT, FACULTY, ORGANIZER, ADMIN"
+        });
+      }
+      event.allowedRoles = updates.allowedRoles;
+    }
     if (updates.image !== undefined) event.image = updates.image;
 
     await event.save();

@@ -4,6 +4,7 @@ const {
   createRegistration,
   getRegistrations,
   getRegistrationById,
+  getEventRegistrations,
   cancelRegistration,
   getMyRegistrations
 } = require("../controllers/registrationController");
@@ -14,11 +15,24 @@ const authorize = require("../middleware/roleMiddleware");
 const router = express.Router();
 
 
+// ============================================================
+// Registration Routes
+//
+// Authorization matrix:
+//   POST  /                     any authenticated user
+//                                (role eligibility enforced in controller via Event.allowedRoles; ADMIN bypass)
+//   GET   /my                   any authenticated user (own registrations only)
+//   GET   /                     ADMIN only
+//   GET   /event/:eventId       ADMIN or owning ORGANIZER
+//   GET   /:id                  owner or ADMIN
+//   PUT   /:id/cancel           owner or ADMIN (ownership + date rules enforced in controller)
+// ============================================================
+
+
 // Register for an event
 router.post(
   "/",
   protect,
-  authorize("STUDENT", "ADMIN"),
   createRegistration
 );
 
@@ -41,19 +55,27 @@ router.get(
 );
 
 
-// Get registration by ID - Admin only
+// Get registrations for a specific event - Admin or event's organizer
+router.get(
+  "/event/:eventId",
+  protect,
+  authorize("ADMIN", "ORGANIZER"),
+  getEventRegistrations
+);
+
+
+// Get registration by ID - owner or admin (ownership checked in controller)
 router.get(
   "/:id",
   protect,
-  authorize("ADMIN"),
   getRegistrationById
 );
 
 
+// Cancel registration - owner or admin (ownership checked in controller)
 router.put(
   "/:id/cancel",
   protect,
-  authorize("STUDENT", "ADMIN"),
   cancelRegistration
 );
 

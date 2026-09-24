@@ -37,6 +37,20 @@ const attendanceSchema = new mongoose.Schema(
       default: null
     },
 
+    // Who last modified the record (audit) - set on updates
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null
+    },
+
+    // Why the record was modified (audit, optional)
+    updateReason: {
+      type: String,
+      trim: true,
+      default: null
+    },
+
     method: {
       type: String,
       enum: ["MANUAL", "QR"],

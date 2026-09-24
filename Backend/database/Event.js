@@ -80,6 +80,14 @@ const eventSchema = new mongoose.Schema(
       default: "All Students"
     },
 
+    // Structured eligibility: which roles may register for this event.
+    // ADMIN is always allowed to register regardless of this list.
+    allowedRoles: {
+      type: [String],
+      enum: ["STUDENT", "FACULTY", "ORGANIZER", "ADMIN"],
+      default: ["STUDENT", "FACULTY", "ORGANIZER"]
+    },
+
     status: {
       type: String,
       enum: [
