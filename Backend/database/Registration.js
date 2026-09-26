@@ -28,13 +28,6 @@ const registrationSchema = new mongoose.Schema(
     cancelledAt: {
       type: Date,
       default: null
-    },
-
-    // Why the registration was cancelled (optional, set by owner/admin)
-    cancellationReason: {
-      type: String,
-      trim: true,
-      default: null
     }
   },
   {
