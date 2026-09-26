@@ -39,6 +39,14 @@ const registerUser = async (req, res) => {
       });
     }
 
+    // Public registration can create non-admin accounts only.
+    const requestedRole = role || "STUDENT";
+    if (!["STUDENT", "FACULTY", "ORGANIZER"].includes(requestedRole)) {
+      return res.status(400).json({
+        message: "Admin accounts cannot be created through public registration"
+      });
+    }
+
     // Check existing email
     const existingUser = await User.findOne({
       email: email.toLowerCase()
@@ -58,7 +66,7 @@ const registerUser = async (req, res) => {
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
-      role: role || "STUDENT",
+      role: requestedRole,
       studentId,
       employeeId,
       department,
@@ -97,7 +105,8 @@ const loginUser = async (req, res) => {
   try {
     const {
       email,
-      password
+      password,
+      role
     } = req.body;
 
     // Validate input
@@ -115,6 +124,13 @@ const loginUser = async (req, res) => {
     if (!user) {
       return res.status(401).json({
         message: "Invalid email or password"
+      });
+    }
+
+    // If a role was selected on the login screen, it must match the account.
+    if (role && user.role !== role) {
+      return res.status(403).json({
+        message: `This account is registered as ${user.role}, not ${role}`
       });
     }
 

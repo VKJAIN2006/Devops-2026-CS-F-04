@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Event = require("../database/Event");
 const Department = require("../database/Department");
 const Venue = require("../database/Venue");
+const Registration = require("../database/Registration");
 
 
 // ==========================================
@@ -36,19 +37,10 @@ const EDITABLE_FIELDS = [
   "maxParticipants",
   "registrationRequired",
   "eligibility",
-  "allowedRoles",
   "image"
 ];
 
 const PROTECTED_FIELDS = ["organizer", "status", "approval"];
-
-
-const VALID_EVENT_ROLES = ["STUDENT", "FACULTY", "ORGANIZER", "ADMIN"];
-
-const isValidAllowedRoles = (roles) =>
-  Array.isArray(roles) &&
-  roles.length > 0 &&
-  roles.every((role) => VALID_EVENT_ROLES.includes(role));
 
 
 // ==========================================
@@ -94,7 +86,6 @@ const createEvent = async (req, res) => {
       maxParticipants,
       registrationRequired,
       eligibility,
-      allowedRoles,
       image
     } = req.body;
 
@@ -218,15 +209,6 @@ const createEvent = async (req, res) => {
       });
     }
 
-    // ========== Allowed roles validation ==========
-    if (allowedRoles !== undefined && allowedRoles !== null) {
-      if (!isValidAllowedRoles(allowedRoles)) {
-        return res.status(400).json({
-          message: "allowedRoles must be a non-empty array of roles from: STUDENT, FACULTY, ORGANIZER, ADMIN"
-        });
-      }
-    }
-
     // ========== Create (always starts as DRAFT) ==========
     const event = await Event.create({
       title: title.trim(),
@@ -243,7 +225,6 @@ const createEvent = async (req, res) => {
       registrationRequired:
         registrationRequired === undefined ? true : registrationRequired === true,
       eligibility,
-      allowedRoles,
       image
     });
 
@@ -270,23 +251,35 @@ const createEvent = async (req, res) => {
 // ==========================================
 const getEvents = async (req, res) => {
   try {
+    // Public/student listing: only events that have been approved AND published.
     const events = await populateEvent(
-      Event.find().sort({ startDate: 1 })
+      Event.find({ status: "PUBLISHED" }).sort({ startDate: 1 })
     );
 
-    res.status(200).json({
-      count: events.length,
-      events
-    });
-
+    res.status(200).json({ count: events.length, events });
   } catch (error) {
-    res.status(500).json({
-      message: "Error fetching events",
-      error: error.message
-    });
+    res.status(500).json({ message: "Error fetching events", error: error.message });
   }
 };
 
+// Management listing for ORGANIZER/ADMIN. This endpoint intentionally exposes
+// workflow states so organizers can submit/review/publish their own events and
+// admins can review all events.
+const getManageEvents = async (req, res) => {
+  try {
+    const filter = req.user.role === "ORGANIZER"
+      ? { organizer: req.user._id }
+      : {};
+
+    const events = await populateEvent(
+      Event.find(filter).sort({ createdAt: -1 })
+    );
+
+    res.status(200).json({ count: events.length, events });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching managed events", error: error.message });
+  }
+};
 
 // ==========================================
 // Get a single event - PUBLIC
@@ -304,14 +297,45 @@ const getEventById = async (req, res) => {
     const event = await populateEvent(Event.findById(id));
 
     if (!event) {
-      return res.status(404).json({
-        message: "Event not found"
-      });
+      return res.status(404).json({ message: "Event not found" });
     }
 
-    res.status(200).json({
-      event
-    });
+    // Public/student callers may only access published events.
+    // Management users may access their own events; ADMIN may access all.
+    const authHeader = req.headers.authorization || "";
+    let canManage = false;
+    if (authHeader.startsWith("Bearer ")) {
+      try {
+        const jwt = require("jsonwebtoken");
+        const User = require("../database/User");
+        const decoded = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET);
+        const currentUser = await User.findById(decoded.id || decoded._id).select("role");
+        canManage = Boolean(
+          currentUser &&
+          (currentUser.role === "ADMIN" ||
+            (currentUser.role === "ORGANIZER" && event.organizer?._id?.toString() === (decoded.id || decoded._id).toString()))
+        );
+      } catch (_) {
+        canManage = false;
+      }
+    }
+
+    if (event.status !== "PUBLISHED" && !canManage) {
+  return res.status(404).json({ message: "Event not available" });
+}
+
+// Count only active registrations
+const registeredCount = await Registration.countDocuments({
+  event: id,
+  status: "REGISTERED"
+});
+
+res.status(200).json({
+  event: {
+    ...event.toObject(),
+    registeredCount
+  }
+});
 
   } catch (error) {
     res.status(500).json({
@@ -503,14 +527,6 @@ const updateEvent = async (req, res) => {
       event.registrationRequired = updates.registrationRequired === true;
     }
     if (updates.eligibility !== undefined) event.eligibility = updates.eligibility;
-    if (updates.allowedRoles !== undefined) {
-      if (!isValidAllowedRoles(updates.allowedRoles)) {
-        return res.status(400).json({
-          message: "allowedRoles must be a non-empty array of roles from: STUDENT, FACULTY, ORGANIZER, ADMIN"
-        });
-      }
-      event.allowedRoles = updates.allowedRoles;
-    }
     if (updates.image !== undefined) event.image = updates.image;
 
     await event.save();
@@ -778,6 +794,7 @@ const deleteEvent = async (req, res) => {
 module.exports = {
   createEvent,
   getEvents,
+  getManageEvents,
   getEventById,
   updateEvent,
   submitEvent,

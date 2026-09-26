@@ -3,6 +3,7 @@ const express = require("express");
 const {
   createEvent,
   getEvents,
+  getManageEvents,
   getEventById,
   updateEvent,
   submitEvent,
@@ -80,6 +81,9 @@ const router = express.Router();
 //   ]
 // }
 router.get("/", getEvents);
+
+// Management listing: ORGANIZER sees their own events; ADMIN sees all.
+router.get("/manage", protect, authorize("ORGANIZER", "ADMIN"), getManageEvents);
 
 
 // ============================================================
