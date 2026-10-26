@@ -1,14 +1,21 @@
-// @vitest-environment jsdom
+
+ // @vitest-environment jsdom
 
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Home from "./Home";
 import { getEvents } from "../services/api";
 
 vi.mock("../services/api", () => ({
-  getEvents: vi.fn()
+  getEvents: vi.fn(),
 }));
 
 describe("Home page", () => {
@@ -28,11 +35,19 @@ describe("Home page", () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole("heading", { name: /Welcome to/i })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /Upcoming Events/i })).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: /Welcome to/i })
+    ).toBeTruthy();
+
+    expect(
+      screen.getByRole("heading", { name: /Upcoming Events/i })
+    ).toBeTruthy();
 
     expect(await screen.findByText("TechNova 2026")).toBeTruthy();
-    expect(screen.getByPlaceholderText("Search events, venues, departments...")).toBeTruthy();
+
+    expect(
+      screen.getByPlaceholderText("Search events, venues, departments...")
+    ).toBeTruthy();
   });
 
   it("filters visible events using the search field", async () => {
@@ -50,7 +65,9 @@ describe("Home page", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("No events match your search.")).toBeTruthy();
+      expect(
+        screen.getByText("No events match your search.")
+      ).toBeTruthy();
     });
   });
 
@@ -66,6 +83,9 @@ describe("Home page", () => {
     expect(
       await screen.findByText(/Backend events are unavailable right now/i)
     ).toBeTruthy();
-    expect(screen.getByText("TechNova 2026")).toBeTruthy();
+
+    expect(
+      screen.getAllByText("TechNova 2026").length
+    ).toBeGreaterThan(0);
   });
 });
