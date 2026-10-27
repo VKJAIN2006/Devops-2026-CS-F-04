@@ -1,0 +1,7 @@
+.git
+.github
+node_modules
+weekly_reports
+*.pdf
+generate_report.py
+

@@ -86,6 +86,26 @@ pipeline {
                 }
             }
         }
+
+        stage('Docker - Validate Configuration') {
+            steps {
+                bat '''
+                    @echo off
+                    where docker-compose >nul 2>nul
+                    if errorlevel 1 (
+                        echo WARNING: docker-compose not found in PATH. Skipping Docker validation stage.
+                        exit /b 0
+                    )
+                    echo Validating docker-compose configuration...
+                    call docker-compose config
+                    if errorlevel 1 (
+                        echo ERROR: Docker Compose configuration validation failed.
+                        exit /b 1
+                    )
+                    echo SUCCESS: Docker Compose configuration is valid.
+                '''
+            }
+        }
     }
 
     post {
